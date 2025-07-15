@@ -1,18 +1,3 @@
-#!/usr/bin/env python3
-"""
-DeFi Credit Scoring Model for Aave V2 Protocol
-=============================================
-
-This script analyzes wallet transaction behavior on the Aave V2 protocol
-and assigns credit scores between 0-1000 based on risk assessment.
-
-Higher scores indicate reliable and responsible usage.
-Lower scores reflect risky, bot-like, or exploitative behavior.
-
-Author: AI Assistant
-Date: July 15, 2025
-"""
-
 import json
 import pandas as pd
 import numpy as np
@@ -226,7 +211,6 @@ class DeFiCreditScorer:
             elif row['transaction_size_cv'] > 5:
                 score -= 50   # Inconsistent behavior
             
-            # Ensure score is within bounds
             score = max(0, min(1000, score))
             scores.append(score)
         
@@ -236,26 +220,19 @@ class DeFiCreditScorer:
         """Train the credit scoring model"""
         print("Training credit scoring model...")
         
-        # Prepare features
         X = features_df.drop(['userWallet'], axis=1)
         y = target_scores
-        
-        # Store feature names
+
         self.feature_names = X.columns.tolist()
         
-        # Split data
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42
         )
-        
-        # Scale features
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
-        
-        # Train model
+
         self.model.fit(X_train_scaled, y_train)
-        
-        # Evaluate model
+
         y_pred = self.model.predict(X_test_scaled)
         mae = mean_absolute_error(y_test, y_pred)
         rmse = np.sqrt(mean_squared_error(y_test, y_pred))
@@ -281,32 +258,26 @@ class DeFiCreditScorer:
         X_scaled = self.scaler.transform(X)
         scores = self.model.predict(X_scaled)
         
-        # Ensure scores are within bounds
         scores = np.clip(scores, 0, 1000)
         
         return scores
     
     def generate_wallet_scores(self, json_file_path, output_file=None):
-        """Main function to generate wallet scores from JSON file"""
         print("=" * 60)
         print("DeFi Credit Scoring Model")
         print("=" * 60)
         
-        # Load and process data
         df = self.load_data(json_file_path)
         features_df = self.extract_features(df)
-        
-        # Create synthetic scores for training
+
         synthetic_scores = self.create_synthetic_scores(features_df)
-        
-        # Train model
+
         feature_importance = self.train_model(features_df, synthetic_scores)
         
-        # Generate final scores
+
         print("\nGenerating final credit scores...")
         final_scores = self.predict_scores(features_df)
         
-        # Create results dataframe
         results = pd.DataFrame({
             'userWallet': features_df['userWallet'],
             'credit_score': final_scores.round(0).astype(int),
@@ -318,10 +289,8 @@ class DeFiCreditScorer:
                                   labels=['High Risk', 'Medium Risk', 'Low Risk', 'Excellent'])
         })
         
-        # Sort by credit score
         results = results.sort_values('credit_score', ascending=False)
         
-        # Display summary statistics
         print("\n" + "=" * 60)
         print("CREDIT SCORE SUMMARY")
         print("=" * 60)
@@ -344,7 +313,6 @@ class DeFiCreditScorer:
         print(results.tail(10)[['userWallet', 'credit_score', 'total_transactions', 
                                'total_usd_volume', 'risk_category']])
         
-        # Perform detailed analysis
         print("\n" + "=" * 60)
         print("PERFORMING DETAILED ANALYSIS")
         print("=" * 60)
@@ -352,15 +320,12 @@ class DeFiCreditScorer:
         analysis_df = self.analyze_wallet_behavior(features_df, results)
         self.create_visualizations(results, analysis_df)
         
-        # Generate comprehensive report
         report = self.generate_analysis_report(results, analysis_df, feature_importance)
-        
-        # Save analysis report
+
         with open('analysis.md', 'w') as f:
             f.write(report)
         print("\nComprehensive analysis report saved to: analysis.md")
-        
-        # Save results if output file specified
+       
         if output_file:
             results.to_csv(output_file, index=False)
             print(f"Results saved to: {output_file}")
@@ -368,10 +333,9 @@ class DeFiCreditScorer:
         return results, feature_importance
 
     def analyze_wallet_behavior(self, features_df, results_df):
-        """Analyze wallet behavior patterns across different score ranges"""
+
         print("Analyzing wallet behavior patterns...")
         
-        # Define score ranges
         score_ranges = [
             (0, 100), (100, 200), (200, 300), (300, 400), (400, 500),
             (500, 600), (600, 700), (700, 800), (800, 900), (900, 1000)
@@ -388,7 +352,6 @@ class DeFiCreditScorer:
             if len(range_wallets) == 0:
                 continue
                 
-            # Get features for these wallets
             range_features = features_df[features_df['userWallet'].isin(range_wallets['userWallet'])]
             
             analysis_data.append({
@@ -412,27 +375,23 @@ class DeFiCreditScorer:
         return pd.DataFrame(analysis_data)
     
     def create_visualizations(self, results_df, analysis_df):
-        """Create visualizations for the analysis"""
+
         print("Creating visualizations...")
         
-        # Set up the plotting style
         plt.style.use('seaborn-v0_8')
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         
-        # 1. Score distribution histogram
         axes[0, 0].hist(results_df['credit_score'], bins=50, alpha=0.7, color='skyblue', edgecolor='black')
         axes[0, 0].set_title('Credit Score Distribution', fontsize=14, fontweight='bold')
         axes[0, 0].set_xlabel('Credit Score')
         axes[0, 0].set_ylabel('Number of Wallets')
         axes[0, 0].grid(True, alpha=0.3)
         
-        # Add vertical lines for score categories
         axes[0, 0].axvline(x=300, color='red', linestyle='--', alpha=0.7, label='High Risk Threshold')
         axes[0, 0].axvline(x=600, color='orange', linestyle='--', alpha=0.7, label='Medium Risk Threshold')
         axes[0, 0].axvline(x=800, color='green', linestyle='--', alpha=0.7, label='Excellent Threshold')
         axes[0, 0].legend()
         
-        # 2. Score distribution by ranges
         range_counts = []
         range_labels = []
         for _, row in analysis_df.iterrows():
@@ -446,7 +405,6 @@ class DeFiCreditScorer:
         axes[0, 1].tick_params(axis='x', rotation=45)
         axes[0, 1].grid(True, alpha=0.3)
         
-        # 3. Average transaction volume by score range
         axes[1, 0].plot(analysis_df['score_range'], analysis_df['avg_usd_volume'], 
                        marker='o', linewidth=2, markersize=8, color='purple')
         axes[1, 0].set_title('Average USD Volume by Score Range', fontsize=14, fontweight='bold')
@@ -456,7 +414,6 @@ class DeFiCreditScorer:
         axes[1, 0].grid(True, alpha=0.3)
         axes[1, 0].set_yscale('log')
         
-        # 4. Repay-to-borrow ratio by score range
         axes[1, 1].bar(analysis_df['score_range'], analysis_df['avg_repay_to_borrow_ratio'], 
                       color='lightgreen', alpha=0.7, edgecolor='black')
         axes[1, 1].set_title('Average Repay-to-Borrow Ratio by Score Range', fontsize=14, fontweight='bold')
@@ -469,10 +426,8 @@ class DeFiCreditScorer:
         plt.savefig('results/wallet_analysis_charts.png', dpi=300, bbox_inches='tight')
         plt.close()
         
-        # Create additional detailed charts
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
         
-        # 5. Activity duration by score range
         axes[0, 0].plot(analysis_df['score_range'], analysis_df['avg_activity_days'], 
                        marker='s', linewidth=2, markersize=8, color='blue')
         axes[0, 0].set_title('Average Activity Duration by Score Range', fontsize=12, fontweight='bold')
@@ -481,7 +436,6 @@ class DeFiCreditScorer:
         axes[0, 0].tick_params(axis='x', rotation=45)
         axes[0, 0].grid(True, alpha=0.3)
         
-        # 6. Asset diversity by score range
         axes[0, 1].bar(analysis_df['score_range'], analysis_df['avg_asset_diversity'], 
                       color='gold', alpha=0.7, edgecolor='black')
         axes[0, 1].set_title('Average Asset Diversity by Score Range', fontsize=12, fontweight='bold')
@@ -490,7 +444,6 @@ class DeFiCreditScorer:
         axes[0, 1].tick_params(axis='x', rotation=45)
         axes[0, 1].grid(True, alpha=0.3)
         
-        # 7. Transaction frequency by score range
         axes[0, 2].plot(analysis_df['score_range'], analysis_df['avg_transaction_frequency'], 
                        marker='^', linewidth=2, markersize=8, color='red')
         axes[0, 2].set_title('Average Transaction Frequency by Score Range', fontsize=12, fontweight='bold')
@@ -499,7 +452,6 @@ class DeFiCreditScorer:
         axes[0, 2].tick_params(axis='x', rotation=45)
         axes[0, 2].grid(True, alpha=0.3)
         
-        # 8. Action ratios by score range
         axes[1, 0].plot(analysis_df['score_range'], analysis_df['avg_deposit_ratio'], 
                        marker='o', label='Deposit', linewidth=2)
         axes[1, 0].plot(analysis_df['score_range'], analysis_df['avg_borrow_ratio'], 
@@ -513,7 +465,6 @@ class DeFiCreditScorer:
         axes[1, 0].legend()
         axes[1, 0].grid(True, alpha=0.3)
         
-        # 9. Liquidation count by score range
         axes[1, 1].bar(analysis_df['score_range'], analysis_df['avg_liquidation_count'], 
                       color='darkred', alpha=0.7, edgecolor='black')
         axes[1, 1].set_title('Average Liquidation Count by Score Range', fontsize=12, fontweight='bold')
@@ -522,7 +473,6 @@ class DeFiCreditScorer:
         axes[1, 1].tick_params(axis='x', rotation=45)
         axes[1, 1].grid(True, alpha=0.3)
         
-        # 10. Transaction size consistency by score range
         axes[1, 2].plot(analysis_df['score_range'], analysis_df['avg_transaction_size_cv'], 
                        marker='d', linewidth=2, markersize=8, color='brown')
         axes[1, 2].set_title('Transaction Size Consistency by Score Range', fontsize=12, fontweight='bold')
@@ -708,7 +658,6 @@ def main():
     json_file_path = "data/user-wallet-transactions.json"
     output_file = "results/credit_scores.csv"
     
-    # Initialize and run the credit scorer
     scorer = DeFiCreditScorer()
     results, feature_importance = scorer.generate_wallet_scores(json_file_path, output_file)
     
