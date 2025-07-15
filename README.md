@@ -94,7 +94,7 @@ pip install -r requirements.txt
 
 ### Running the Model
 ```bash
-python defi_credit_scorer.py data/user-wallet-transactions.json [output.csv]
+python defi_credit_scorer.py
 ```
 
 The script will:
